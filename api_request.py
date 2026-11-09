@@ -20,7 +20,7 @@ class ApiRequest(QThread):
             response = client.models.generate_content(
                 model="gemini-3.5-flash-lite",
                 contents=self.prompt,
-            ) # тут добавить контекст
+            )  # тут добавить контекст
 
             self.response_result.emit(response.text)
 
