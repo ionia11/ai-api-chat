@@ -1,7 +1,10 @@
 .venv/
 .idea/
+build/
+dist/
+__pycache__/
+main.spec
 .env
 chat.db
-__pycache__/
-*.py[cod]
-tasks.local.md
+ai.ico
+AIChat.spec

@@ -13,6 +13,11 @@ class ApiRequest(QThread):
         self.contents = contents
         self.model = model
 
+    def stop(self):
+        self.requestInterruption()
+        self.terminate()
+        self.wait(2000)
+
     def run(self):
         try:
             with genai.Client(api_key=self.api_key) as client:
@@ -20,6 +25,9 @@ class ApiRequest(QThread):
                     model=self.model,
                     contents=self.contents,
                 )
+
+            if self.isInterruptionRequested():
+                return
 
             text = (response.text or "").strip()
             if not text:

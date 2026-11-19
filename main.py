@@ -16,9 +16,17 @@ from database.db import ChatStorage
 from ui.app_settings import AppSettings
 from ui.dialogs import SettingsDialog
 
-BASE_DIR = Path(__file__).resolve().parent
-UI_PATH = BASE_DIR / "ui" / "main_window.ui"
+if getattr(sys, "frozen", False):
+    # Собранный PyInstaller-бинарник: ресурсы лежат во временной папке _MEIPASS,
+    # а изменяемые данные — рядом с .exe.
+    BASE_DIR = Path(sys.executable).resolve().parent
+    UI_PATH = Path(getattr(sys, "_MEIPASS", BASE_DIR)) / "ui" / "main_window.ui"
+else:
+    BASE_DIR = Path(__file__).resolve().parent
+    UI_PATH = BASE_DIR / "ui" / "main_window.ui"
+
 DB_PATH = BASE_DIR / "database" / "chat.db"
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 DEFAULT_CHAT_TITLE = "Новый чат"
 MAX_TITLE_LENGTH = 40
@@ -217,12 +225,28 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         if self.request is not None:
-            QMessageBox.information(self, "Запрос", "Дождитесь ответа.")
-            event.ignore()
-            return
+            answer = QMessageBox.question(
+                self,
+                "Выход",
+                "Точно выйти?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                event.ignore()
+                return
+
+            self.stop_request()
 
         self.storage.close()
         super().closeEvent(event)
+
+    def stop_request(self):
+        request = self.request
+        self.request = None
+        if request is not None:
+            request.stop()
+            request.deleteLater()
 
 
 def main():
@@ -233,6 +257,6 @@ def main():
     window.show()
     sys.exit(app.exec())
 
-
+# .\.venv\Scripts\python.exe -m PyInstaller AIChat.spec --clean --noconfirm | Select-Object -Last 5
 if __name__ == "__main__":
     main()
