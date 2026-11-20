@@ -3,6 +3,7 @@ from pathlib import Path
 
 from PyQt6 import uic
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QColor, QPalette
 from PyQt6.QtWidgets import (
     QApplication,
     QListWidgetItem,
@@ -15,6 +16,7 @@ from api_request import ApiRequest
 from database.db import ChatStorage
 from ui.app_settings import AppSettings
 from ui.dialogs import SettingsDialog
+from ui.stylesheet_file import STYLESHEET
 
 if getattr(sys, "frozen", False):
     BASE_DIR = Path(sys.executable).resolve().parent
@@ -57,6 +59,34 @@ class MainWindow(QMainWindow):
         self.reload_chats()
         self.message_input.setFocus()
         self.statusBar().showMessage("Готово")
+
+        app = QApplication([])
+
+        # Принудительно включаем «Темную палитру» для PyQt6
+        dark_palette = QPalette()
+
+        # В PyQt6 используется QPalette.ColorRole.ИмяРоли
+        dark_palette.setColor(QPalette.ColorRole.Window, QColor(30, 30, 30))  # Фон окна
+        dark_palette.setColor(
+            QPalette.ColorRole.WindowText, QColor(240, 240, 240)
+        )  # Текст
+        dark_palette.setColor(QPalette.ColorRole.Base, QColor(45, 45, 45))  # Фон полей
+        dark_palette.setColor(
+            QPalette.ColorRole.AlternateBase, QColor(53, 53, 53)
+        )
+        dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
+        dark_palette.setColor(QPalette.ColorRole.ToolTipText, QColor(255, 255, 255))
+        dark_palette.setColor(QPalette.ColorRole.Text, QColor(240, 240, 240))  # Текст
+        dark_palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))  # Кнопки
+        dark_palette.setColor(QPalette.ColorRole.ButtonText, QColor(240, 240, 240))
+        dark_palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
+        dark_palette.setColor(
+            QPalette.ColorRole.Highlight, QColor(42, 130, 218)
+        )  # Выделение
+        dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(0, 0, 0))
+
+        app.setPalette(dark_palette)
+        self.setStyleSheet(STYLESHEET)
 
     def open_settings(self):
         SettingsDialog(self.settings, self).exec()
