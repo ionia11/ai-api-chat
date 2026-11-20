@@ -38,7 +38,14 @@
         </widget>
        </item>
        <item>
-        <widget class="QListWidget" name="chats_list"/>
+        <widget class="QListWidget" name="chats_list">
+         <property name="horizontalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
+         <property name="textElideMode">
+          <enum>Qt::ElideRight</enum>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>

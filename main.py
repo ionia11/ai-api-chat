@@ -3,7 +3,7 @@ from pathlib import Path
 
 from PyQt6 import uic
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor, QPalette
+from PyQt6.QtGui import QTextBlockFormat
 from PyQt6.QtWidgets import (
     QApplication,
     QListWidgetItem,
@@ -16,7 +16,7 @@ from api_request import ApiRequest
 from database.db import ChatStorage
 from ui.app_settings import AppSettings
 from ui.dialogs import SettingsDialog
-from ui.stylesheet_file import STYLESHEET
+from ui.theme import apply_dark_theme, enable_dark_title_bar
 
 if getattr(sys, "frozen", False):
     BASE_DIR = Path(sys.executable).resolve().parent
@@ -30,12 +30,21 @@ DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 DEFAULT_CHAT_TITLE = "Новый чат"
 MAX_TITLE_LENGTH = 40
+MESSAGE_SPACING_LINES = 2
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         uic.loadUi(str(UI_PATH), self)
+
+        self.main_layout.setContentsMargins(14, 12, 14, 12)
+        self.main_layout.setSpacing(12)
+        self.sidebar_layout.setContentsMargins(12, 12, 12, 12)
+        self.sidebar_layout.setSpacing(10)
+        self.chat_layout.setContentsMargins(0, 0, 0, 0)
+        self.chat_layout.setSpacing(12)
+        self.input_layout.setSpacing(10)
 
         self.settings = AppSettings()
         self.storage = ChatStorage(DB_PATH)
@@ -48,45 +57,22 @@ class MainWindow(QMainWindow):
         self.chats_list.itemSelectionChanged.connect(self.on_chat_selected)
         self.chats_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.chats_list.customContextMenuRequested.connect(self.show_chat_menu)
-
+        self.chats_list.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.chats_list.setTextElideMode(Qt.TextElideMode.ElideRight)
         self.action_settings.triggered.connect(self.open_settings)
-
         self.chat_view.setPlaceholderText(
             "Выберите чат или начните новый. API-ключ задаётся в меню «Настройки»."
         )
         self.chat_view.setOpenExternalLinks(True)
-
         self.reload_chats()
         self.message_input.setFocus()
         self.statusBar().showMessage("Готово")
 
-        app = QApplication([])
-
-        # Принудительно включаем «Темную палитру» для PyQt6
-        dark_palette = QPalette()
-
-        # В PyQt6 используется QPalette.ColorRole.ИмяРоли
-        dark_palette.setColor(QPalette.ColorRole.Window, QColor(30, 30, 30))  # Фон окна
-        dark_palette.setColor(
-            QPalette.ColorRole.WindowText, QColor(240, 240, 240)
-        )  # Текст
-        dark_palette.setColor(QPalette.ColorRole.Base, QColor(45, 45, 45))  # Фон полей
-        dark_palette.setColor(
-            QPalette.ColorRole.AlternateBase, QColor(53, 53, 53)
-        )
-        dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
-        dark_palette.setColor(QPalette.ColorRole.ToolTipText, QColor(255, 255, 255))
-        dark_palette.setColor(QPalette.ColorRole.Text, QColor(240, 240, 240))  # Текст
-        dark_palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))  # Кнопки
-        dark_palette.setColor(QPalette.ColorRole.ButtonText, QColor(240, 240, 240))
-        dark_palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
-        dark_palette.setColor(
-            QPalette.ColorRole.Highlight, QColor(42, 130, 218)
-        )  # Выделение
-        dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(0, 0, 0))
-
-        app.setPalette(dark_palette)
-        self.setStyleSheet(STYLESHEET)
+    def showEvent(self, event):
+        super().showEvent(event)
+        enable_dark_title_bar(self)
 
     def open_settings(self):
         SettingsDialog(self.settings, self).exec()
@@ -169,7 +155,20 @@ class MainWindow(QMainWindow):
             prefix = "**Вы:**" if message["role"] == "user" else "**AI:**"
             blocks.append(f"{prefix} {message['content']}")
 
-        self.chat_view.setMarkdown("\n\n".join(blocks))
+        self.chat_view.clear()
+        cursor = self.chat_view.textCursor()
+        spacing = int(
+            self.chat_view.fontMetrics().lineSpacing() * MESSAGE_SPACING_LINES
+        )
+        first = True
+        for block in blocks:
+            if not first:
+                block_format = QTextBlockFormat()
+                block_format.setTopMargin(spacing)
+                cursor.insertBlock(block_format)
+            first = False
+            cursor.insertMarkdown(block)
+
         scrollbar = self.chat_view.verticalScrollBar()
         scrollbar.setValue(scrollbar.maximum())
 
@@ -281,10 +280,11 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("AI B2B SaaS API Chat")
 
+    apply_dark_theme(app)
+
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
 
-# .\.venv\Scripts\python.exe -m PyInstaller AIChat.spec --clean --noconfirm | Select-Object -Last 5
 if __name__ == "__main__":
     main()
