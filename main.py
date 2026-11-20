@@ -17,8 +17,6 @@ from ui.app_settings import AppSettings
 from ui.dialogs import SettingsDialog
 
 if getattr(sys, "frozen", False):
-    # Собранный PyInstaller-бинарник: ресурсы лежат во временной папке _MEIPASS,
-    # а изменяемые данные — рядом с .exe.
     BASE_DIR = Path(sys.executable).resolve().parent
     UI_PATH = Path(getattr(sys, "_MEIPASS", BASE_DIR)) / "ui" / "main_window.ui"
 else:
